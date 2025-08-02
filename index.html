@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self';">
+    <title>블로그 SEO 키워드 추천 도구</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js" 
+            integrity="sha384-7lePLKAmHP2yK99Yz6+GifhofSO7F4TZFJjCwzUYNfGRMAd1LUvXAauEwqJkm2YA" 
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" 
+            integrity="sha384-r5l/sllh5J36jLrIhCU3YOyKqKhm4gdZ4jgcYxrjJWW7Z9ExNg+iZdKnIHfLhTzv" 
+            crossorigin="anonymous"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .search-section {
+            background: #f8f9ff;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px solid #e3e8ff;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .keyword-input {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .keyword-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .categories {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .category-btn {
+            background: white;
+            border: 2px solid #e1e5e9;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .category-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .category-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .results-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .export-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .sort-btn {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .sort-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .results-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .results-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .results-table tr:nth-child(even) {
+            background: #f8f9ff;
+        }
+
+        .results-table tr:hover {
+            background: #e3e8ff;
+        }
+
+        .keyword-cell {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .volume-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .volume-high { background: #d4edda; color: #155724; }
+        .volume-medium { background: #fff3cd; color: #856404; }
+        .volume-low { background: #f8d7da; color: #721c24; }
+
+        .difficulty-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .difficulty-easy { background: #d4edda; color: #155724; }
+        .difficulty-medium { background: #fff3cd; color: #856404; }
+        .difficulty-hard { background: #f8d7da; color: #721c24; }
+
+        .score-bar {
+            width: 60px;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #0abde3);
+            transition: width 0.3s ease;
+        }
+
+        .favorite-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #ccc;
+            transition: color 0.3s ease;
+        }
+
+        .favorite-btn.active {
+            color: #ff6b6b;
+        }
+
+        .visualization-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #333;
+        }
+
+        .word-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            min-height: 200px;
+            align-items: center;
+        }
+
+        .word-item {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        .word-item:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .history-section {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+
+        .history-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .history-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .history-item {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid #e1e5e9;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .keyword-input {
+                min-width: auto;
+            }
+
+            .visualization-section {
+                grid-template-columns: 1fr;
+            }
+
+            .results-table {
+                font-size: 14px;
+            }
+
+            .results-table th,
+            .results-table td {
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>블로그 SEO 키워드 추천</h1>
+            <p>블로그 성공을 위한 최적의 키워드를 찾아보세요!</p>
+        </div>
+
+        <div class="main-content">
+            <div class="search-section">
+                <div class="input-group">
+                    <input type="text" class="keyword-input" id="keywordInput" 
+                           placeholder="키워드를 입력하세요 (예: 수박, 맛집, 여행)" 
+                           maxlength="50" 
+                           pattern="[a-zA-Z0-9가-힣\s]{1,50}">
+                    <button class="search-btn" id="searchBtn">키워드 분석</button>
+                </div>
+                
+                <div class="categories">
+                    <button class="category-btn active" data-category="all">전체</button>
+                    <button class="category-btn" data-category="food">음식</button>
+                    <button class="category-btn" data-category="travel">여행</button>
+                    <button class="category-btn" data-category="beauty">뷰티</button>
+                    <button class="category-btn" data-category="hobby">취미</button>
+                    <button class="category-btn" data-category="it">IT</button>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>키워드를 분석하고 있습니다...</p>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <div class="results-header">
+                    <h2 class="results-title">추천 키워드 (<span id="resultCount">0</span>개)</h2>
+                    <div class="export-buttons">
+                        <button class="export-btn" id="exportCsv">CSV 내보내기</button>
+                        <button class="export-btn" id="exportExcel">Excel 내보내기</button>
+                    </div>
+                </div>
+
+                <div class="sort-controls">
+                    <button class="sort-btn active" data-sort="score">점수순</button>
+                    <button class="sort-btn" data-sort="volume">검색량순</button>
+                    <button class="sort-btn" data-sort="difficulty">경쟁도순</button>
+                    <button class="sort-btn" data-sort="keyword">키워드순</button>
+                </div>
+
+                <table class="results-table" id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>즐겨찾기</th>
+                            <th>키워드</th>
+                            <th>예상 검색량</th>
+                            <th>경쟁도</th>
+                            <th>SEO 점수</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody">
+                    </tbody>
+                </table>
+
+                <div class="visualization-section">
+                    <div class="chart-container">
+                        <div class="chart-title">키워드 점수 분포</div>
+                        <canvas id="scoreChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title">키워드 클라우드</div>
+                        <div class="word-cloud" id="wordCloud"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <div class="history-title">최근 검색 기록</div>
+                <div class="history-list" id="historyList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class KeywordTool {
+            constructor() {
+                this.keywords = [];
+                this.favorites = this.loadSecureData('seo-favorites', []);
+                this.history = this.loadSecureData('seo-history', []);
+                this.currentSort = 'score';
+                this.currentCategory = 'all';
+                this.chart = null;
+                
+                this.initializeEventListeners();
+                this.loadHistory();
+                this.generateTestKeywords();
+            }
+
+            loadSecureData(key, defaultValue) {
+                try {
+                    const data = localStorage.getItem(key);
+                    if (!data) return defaultValue;
+                    
+                    const parsed = JSON.parse(data);
+                    
+                    // 배열인지 확인하고 각 항목을 검증
+                    if (Array.isArray(parsed)) {
+                        return parsed.filter(item => 
+                            typeof item === 'string' && 
+                            this.validateInput(item) && 
+                            item.length <= 50
+                        ).slice(0, 50); // 최대 50개 항목만 허용
+                    }
+                    
+                    return defaultValue;
+                } catch (e) {
+                    console.warn(`로컬 스토리지 로드 실패 (${key}):`, e);
+                    return defaultValue;
+                }
+            }
+
+            initializeEventListeners() {
+                document.getElementById('searchBtn').addEventListener('click', () => this.searchKeywords());
+                document.getElementById('keywordInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.searchKeywords();
+                });
+
+                // 카테고리 버튼
+                document.querySelectorAll('.category-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentCategory = e.target.dataset.category;
+                    });
+                });
+
+                // 정렬 버튼
+                document.querySelectorAll('.sort-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentSort = e.target.dataset.sort;
+                        this.renderResults();
+                    });
+                });
+
+                // 내보내기 버튼
+                document.getElementById('exportCsv').addEventListener('click', () => this.exportToCsv());
+                document.getElementById('exportExcel').addEventListener('click', () => this.exportToExcel());
+            }
+
+            generateTestKeywords() {
+                const testKeywords = ['치킨', '제주도', '다이어트', '인테리어'];
+                testKeywords.forEach(keyword => {
+                    if (!this.history.includes(keyword)) {
+                        this.addToHistory(keyword);
+                    }
+                });
+            }
+
+            searchKeywords() {
+                const keyword = document.getElementById('keywordInput').value.trim();
+                if (!keyword) {
+                    alert('키워드를 입력해주세요.');
+                    return;
+                }
+
+                // 입력 검증 및 보안 필터링
+                if (!this.validateInput(keyword)) {
+                    alert('유효하지 않은 키워드입니다. 한글, 영문, 숫자만 입력 가능합니다.');
+                    return;
+                }
+
+                this.showLoading(true);
+                this.addToHistory(keyword);
+
+                // 시뮬레이션 지연
+                setTimeout(() => {
+                    this.keywords = this.generateKeywords(keyword);
+                    this.renderResults();
+                    this.createChart();
+                    this.createWordCloud();
+                    this.showLoading(false);
+                    document.getElementById('resultsSection').style.display = 'block';
+                }, 1500);
+            }
+
+            generateKeywords(baseKeyword) {
+                const prefixes = ['최고의', '추천', '인기', '신상', '할인', '특가', '리뷰', '후기', '비교', '순위'];
+                const suffixes = ['방법', '팁', '추천', '후기', '리뷰', '가격', '할인', '이벤트', '정보', '가이드', '매뉴얼', '노하우'];
+                const locations = ['강남', '홍대', '명동', '건대', '신촌', '판교', '분당', '일산'];
+                const questions = ['어떻게', '왜', '언제', '어디서', '무엇을', '누가'];
+                const seasonal = ['봄', '여름', '가을', '겨울', '2024년', '신년', '연말'];
+
+                const keywords = [];
+                
+                // 기본 키워드
+                keywords.push({
+                    keyword: baseKeyword,
+                    volume: this.getRandomVolume(),
+                    difficulty: this.getRandomDifficulty(),
+                    score: this.calculateScore('high', 'hard')
+                });
+
+                // 접두사 조합
+                prefixes.forEach(prefix => {
+                    keywords.push({
+                        keyword: `${prefix} ${baseKeyword}`,
+                        volume: this.getRandomVolume(),
+                        difficulty: this.getRandomDifficulty(),
+                        score: this.calculateScore(this.getRandomVolume(), this.getRandomDifficulty())
+                    });
+                });
+
+                // 접미사 조합
+                suffixes.forEach(suffix => {
+                    keywords.push({
+                        keyword: `${baseKeyword} ${suffix}`,
+                        volume: this.getRandomVolume(),
+                        difficulty: this.getRandomDifficulty(), 
+                        score: this.calculateScore(this.getRandomVolume(), this.getRandomDifficulty())
+                    });
+                });
+
+                // 지역 조합
+                locations.slice(0, 5).forEach(location => {
+                    keywords.push({
+                        keyword: `${location} ${baseKeyword}`,
+                        volume: this.getRandomVolume(),
+                        difficulty: this.getRandomDifficulty(),
+                        score: this.calculateScore(this.getRandomVolume(), this.getRandomDifficulty())
+                    });
+                });
+
+                // 질문형 키워드
+                questions.slice(0, 3).forEach(question => {
+                    keywords.push({
+                        keyword: `${baseKeyword} ${question}`,
+                        volume: this.getRandomVolume(),
+                        difficulty: this.getRandomDifficulty(),
+                        score: this.calculateScore(this.getRandomVolume(), this.getRandomDifficulty())
+                    });
+                });
+
+                // 계절성 키워드
+                seasonal.slice(0, 3).forEach(season => {
+                    keywords.push({
+                        keyword: `${season} ${baseKeyword}`,
+                        volume: this.getRandomVolume(),
+                        difficulty: this.getRandomDifficulty(),
+                        score: this.calculateScore(this.getRandomVolume(), this.getRandomDifficulty())
+                    });
+                });
+
+                // 카테고리별 특화 키워드
+                if (this.currentCategory !== 'all') {
+                    const categoryKeywords = this.getCategorySpecificKeywords(baseKeyword, this.currentCategory);
+                    keywords.push(...categoryKeywords);
+                }
+
+                return keywords.slice(0, 30); // 최대 30개 키워드
+            }
+
+            getCategorySpecificKeywords(baseKeyword, category) {
+                const categoryData = {
+                    food: ['레시피', '맛집', '요리법', '재료', '칼로리', '영양', '건강한'],
+                    travel: ['여행지', '관광지', '숙박', '항공', '패키지', '일정', '코스'],
+                    beauty: ['화장품', '스킨케어', '메이크업', '성분', '브랜드', '효과', '리뷰'],
+                    hobby: ['취미', '배우기', '입문', '장비', '용품', '클래스', '강의'],
+                    it: ['개발', '프로그래밍', '코딩', '앱', '웹', '기술', '튜토리얼']
+                };
+
+                const terms = categoryData[category] || [];
+                return terms.map(term => ({
+                    keyword: `${baseKeyword} ${term}`,
+                    volume: this.getRandomVolume(),
+                    difficulty: this.getRandomDifficulty(),
+                    score: this.calculateScore(this.getRandomVolume(), this.getRandomDifficulty())
+                }));
+            }
+
+            getRandomVolume() {
+                const volumes = ['high', 'medium', 'low'];
+                return volumes[Math.floor(Math.random() * volumes.length)];
+            }
+
+            getRandomDifficulty() {
+                const difficulties = ['easy', 'medium', 'hard'];
+                return difficulties[Math.floor(Math.random() * difficulties.length)];
+            }
+
+            calculateScore(volume, difficulty) {
+                const volumeScore = { high: 40, medium: 25, low: 10 };
+                const difficultyScore = { easy: 40, medium: 25, hard: 10 };
+                const randomFactor = Math.floor(Math.random() * 21) - 10; // -10 to +10
+                
+                return Math.max(1, Math.min(100, 
+                    volumeScore[volume] + difficultyScore[difficulty] + randomFactor + 20
+                ));
+            }
+
+            renderResults() {
+                const tbody = document.getElementById('resultsTableBody');
+                const sortedKeywords = this.sortKeywords(this.keywords);
+                
+                // 기존 내용을 안전하게 제거
+                while (tbody.firstChild) {
+                    tbody.removeChild(tbody.firstChild);
+                }
+                
+                sortedKeywords.forEach((kw, index) => {
+                    const row = document.createElement('tr');
+                    const isFavorite = this.favorites.includes(kw.keyword);
+                    
+                    // 안전한 DOM 요소 생성 (innerHTML 대신 개별 요소 생성)
+                    const favoriteCell = document.createElement('td');
+                    const favoriteBtn = document.createElement('button');
+                    favoriteBtn.className = `favorite-btn ${isFavorite ? 'active' : ''}`;
+                    favoriteBtn.textContent = '♥';
+                    favoriteBtn.addEventListener('click', () => this.toggleFavorite(kw.keyword));
+                    favoriteCell.appendChild(favoriteBtn);
+                    
+                    const keywordCell = document.createElement('td');
+                    keywordCell.className = 'keyword-cell';
+                    keywordCell.textContent = this.escapeHtml(kw.keyword); // XSS 방지
+                    
+                    const volumeCell = document.createElement('td');
+                    const volumeBadge = document.createElement('span');
+                    volumeBadge.className = `volume-badge volume-${kw.volume}`;
+                    volumeBadge.textContent = this.getVolumeText(kw.volume);
+                    volumeCell.appendChild(volumeBadge);
+                    
+                    const difficultyCell = document.createElement('td');
+                    const difficultyBadge = document.createElement('span');
+                    difficultyBadge.className = `difficulty-badge difficulty-${kw.difficulty}`;
+                    difficultyBadge.textContent = this.getDifficultyText(kw.difficulty);
+                    difficultyCell.appendChild(difficultyBadge);
+                    
+                    const scoreCell = document.createElement('td');
+                    const scoreBar = document.createElement('div');
+                    scoreBar.className = 'score-bar';
+                    const scoreFill = document.createElement('div');
+                    scoreFill.className = 'score-fill';
+                    scoreFill.style.width = `${Math.min(100, Math.max(0, kw.score))}%`; // 범위 제한
+                    scoreBar.appendChild(scoreFill);
+                    scoreCell.appendChild(scoreBar);
+                    scoreCell.appendChild(document.createTextNode(` ${kw.score}`));
+                    
+                    row.appendChild(favoriteCell);
+                    row.appendChild(keywordCell);
+                    row.appendChild(volumeCell);
+                    row.appendChild(difficultyCell);
+                    row.appendChild(scoreCell);
+                    
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('resultCount').textContent = sortedKeywords.length;
+            }
+
+            sortKeywords(keywords) {
+                const sorted = [...keywords];
+                
+                switch (this.currentSort) {
+                    case 'score':
+                        return sorted.sort((a, b) => b.score - a.score);
+                    case 'volume':
+                        const volumeOrder = { high: 3, medium: 2, low: 1 };
+                        return sorted.sort((a, b) => volumeOrder[b.volume] - volumeOrder[a.volume]);
+                    case 'difficulty':
+                        const difficultyOrder = { easy: 3, medium: 2, hard: 1 };
+                        return sorted.sort((a, b) => difficultyOrder[b.difficulty] - difficultyOrder[a.difficulty]);
+                    case 'keyword':
+                        return sorted.sort((a, b) => a.keyword.localeCompare(b.keyword));
+                    default:
+                        return sorted;
+                }
+            }
+
+            getVolumeText(volume) {
+                const texts = { high: '높음', medium: '보통', low: '낮음' };
+                return texts[volume] || volume;
+            }
+
+            getDifficultyText(difficulty) {
+                const texts = { easy: '쉬움', medium: '보통', hard: '어려움' };
+                return texts[difficulty] || difficulty;
+            }
+
+            toggleFavorite(keyword) {
+                // 입력 검증 및 이스케이프
+                const sanitizedKeyword = this.escapeHtml(keyword);
+                if (!this.validateInput(sanitizedKeyword)) {
+                    return;
+                }
+                
+                const index = this.favorites.indexOf(sanitizedKeyword);
+                if (index > -1) {
+                    this.favorites.splice(index, 1);
+                } else {
+                    this.favorites.push(sanitizedKeyword);
+                }
+                
+                try {
+                    localStorage.setItem('seo-favorites', JSON.stringify(this.favorites));
+                } catch (e) {
+                    console.warn('로컬 스토리지 저장 실패:', e);
+                }
+                this.renderResults();
+            }
+
+            createChart() {
+                const ctx = document.getElementById('scoreChart').getContext('2d');
+                
+                if (this.chart) {
+                    this.chart.destroy();
+                }
+
+                const scores = this.keywords.map(kw => kw.score);
+                const scoreRanges = {
+                    '81-100': scores.filter(s => s >= 81).length,
+                    '61-80': scores.filter(s => s >= 61 && s <= 80).length,
+                    '41-60': scores.filter(s => s >= 41 && s <= 60).length,
+                    '21-40': scores.filter(s => s >= 21 && s <= 40).length,
+                    '1-20': scores.filter(s => s >= 1 && s <= 20).length
+                };
+
+                this.chart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(scoreRanges),
+                        datasets: [{
+                            data: Object.values(scoreRanges),
+                            backgroundColor: [
+                                '#28a745',
+                                '#17a2b8',
+                                '#ffc107',
+                                '#fd7e14',
+                                '#dc3545'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            createWordCloud() {
+                const wordCloud = document.getElementById('wordCloud');
+                
+                // 기존 내용을 안전하게 제거
+                while (wordCloud.firstChild) {
+                    wordCloud.removeChild(wordCloud.firstChild);
+                }
+
+                const topKeywords = this.keywords
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 15);
+
+                topKeywords.forEach((kw, index) => {
+                    const wordItem = document.createElement('div');
+                    wordItem.className = 'word-item';
+                    wordItem.textContent = this.escapeHtml(kw.keyword); // XSS 방지
+                    wordItem.style.fontSize = `${Math.max(12, 16 - index * 0.5)}px`; // 최소 크기 보장
+                    wordItem.style.animationDelay = `${index * 0.1}s`;
+                    
+                    wordItem.addEventListener('click', () => {
+                        document.getElementById('keywordInput').value = this.escapeHtml(kw.keyword);
+                    });
+                    
+                    wordCloud.appendChild(wordItem);
+                });
+            }
+
+            addToHistory(keyword) {
+                // 입력 검증
+                if (!this.validateInput(keyword)) {
+                    return;
+                }
+                
+                const sanitizedKeyword = this.escapeHtml(keyword);
+                if (!this.history.includes(sanitizedKeyword)) {
+                    this.history.unshift(sanitizedKeyword);
+                    if (this.history.length > 10) {
+                        this.history = this.history.slice(0, 10);
+                    }
+                    try {
+                        localStorage.setItem('seo-history', JSON.stringify(this.history));
+                    } catch (e) {
+                        console.warn('로컬 스토리지 저장 실패:', e);
+                    }
+                    this.loadHistory();
+                }
+            }
+
+            loadHistory() {
+                const historyList = document.getElementById('historyList');
+                
+                // 기존 내용을 안전하게 제거
+                while (historyList.firstChild) {
+                    historyList.removeChild(historyList.firstChild);
+                }
+
+                this.history.forEach(keyword => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.textContent = this.escapeHtml(keyword); // XSS 방지
+                    historyItem.addEventListener('click', () => {
+                        document.getElementById('keywordInput').value = this.escapeHtml(keyword);
+                        this.searchKeywords();
+                    });
+                    historyList.appendChild(historyItem);
+                });
+            }
+
+            exportToCsv() {
+                if (this.keywords.length === 0) {
+                    alert('내보낼 데이터가 없습니다.');
+                    return;
+                }
+
+                try {
+                    const csvContent = [
+                        ['키워드', '예상 검색량', '경쟁도', 'SEO 점수'],
+                        ...this.keywords.map(kw => [
+                            this.escapeHtml(kw.keyword || ''), // 안전한 문자열 처리
+                            this.getVolumeText(kw.volume),
+                            this.getDifficultyText(kw.difficulty),
+                            Math.max(0, Math.min(100, parseInt(kw.score) || 0)) // 점수 범위 제한
+                        ])
+                    ].map(row => row.map(cell => 
+                        `"${String(cell).replace(/"/g, '""')}"` // CSV 이스케이프
+                    ).join(',')).join('\n');
+
+                    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    const safeDate = new Date().toISOString().split('T')[0].replace(/[^0-9-]/g, '');
+                    link.download = `seo-keywords-${safeDate}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href); // 메모리 정리
+                } catch (e) {
+                    console.error('CSV 내보내기 실패:', e);
+                    alert('파일 내보내기에 실패했습니다.');
+                }
+            }
+
+            exportToExcel() {
+                if (this.keywords.length === 0) {
+                    alert('내보낼 데이터가 없습니다.');
+                    return;
+                }
+
+                try {
+                    const ws = XLSX.utils.json_to_sheet(
+                        this.keywords.map(kw => ({
+                            '키워드': this.escapeHtml(kw.keyword || ''), // 안전한 문자열 처리
+                            '예상 검색량': this.getVolumeText(kw.volume),
+                            '경쟁도': this.getDifficultyText(kw.difficulty),
+                            'SEO 점수': Math.max(0, Math.min(100, parseInt(kw.score) || 0)) // 점수 범위 제한
+                        }))
+                    );
+
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'SEO 키워드');
+                    const safeDate = new Date().toISOString().split('T')[0].replace(/[^0-9-]/g, '');
+                    XLSX.writeFile(wb, `seo-keywords-${safeDate}.xlsx`);
+                } catch (e) {
+                    console.error('Excel 내보내기 실패:', e);
+                    alert('파일 내보내기에 실패했습니다.');
+                }
+            }
+
+            showLoading(show) {
+                document.getElementById('loading').style.display = show ? 'block' : 'none';
+            }
+
+            // 보안 함수들
+            escapeHtml(text) {
+                if (typeof text !== 'string') {
+                    return '';
+                }
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            validateInput(input) {
+                // 입력 길이 제한 (1-50자)
+                if (!input || input.length < 1 || input.length > 50) {
+                    return false;
+                }
+                
+                // 허용된 문자만 포함 (한글, 영문, 숫자, 공백)
+                const allowedPattern = /^[a-zA-Z0-9가-힣\s]+$/;
+                if (!allowedPattern.test(input)) {
+                    return false;
+                }
+                
+                // 스크립트 태그나 위험한 문자열 차단
+                const dangerousPatterns = [
+                    /<script/i,
+                    /<\/script/i,
+                    /javascript:/i,
+                    /vbscript:/i,
+                    /on\w+=/i,
+                    /<iframe/i,
+                    /<object/i,
+                    /<embed/i
+                ];
+                
+                return !dangerousPatterns.some(pattern => pattern.test(input));
+            }
+
+            sanitizeData(data) {
+                if (typeof data === 'string') {
+                    return this.escapeHtml(data);
+                } else if (Array.isArray(data)) {
+                    return data.map(item => this.sanitizeData(item));
+                } else if (typeof data === 'object' && data !== null) {
+                    const sanitized = {};
+                    for (const key in data) {
+                        if (data.hasOwnProperty(key)) {
+                            sanitized[key] = this.sanitizeData(data[key]);
+                        }
+                    }
+                    return sanitized;
+                }
+                return data;
+            }
+        }
+
+        // 앱 초기화
+        const keywordTool = new KeywordTool();
+    </script>
+</body>
+</html>
